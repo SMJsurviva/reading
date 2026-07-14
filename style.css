@@ -1,0 +1,20 @@
+/* The Reading Room — shared styles for all pages */
+body{font-family:Georgia,'Noto Serif',serif;line-height:1.65;max-width:38em;
+margin:2em auto;padding:0 1em;color:#222;background:#faf8f4}
+h1{font-size:1.6em;margin-bottom:.1em}
+h2{margin-top:2.2em;font-size:1.35em}
+h2.ch{font-size:1.15em;margin-top:2.4em;color:#7a4a12}
+h3.month{margin-top:1.8em;font-size:1.05em;color:#7a4a12}
+.meta{color:#666;font-size:.9em;margin-top:0}
+.pitch,.note{background:#f0ead9;padding:.8em 1em;border-radius:8px;margin:1.4em 0}
+.q{background:#f0ead9;padding:.7em 1em;border-radius:8px;margin-top:1.6em}
+details summary{cursor:pointer;color:#7a4a12;font-weight:bold}
+a{color:#7a4a12}
+ol{padding-left:1.2em}
+li{margin:.5em 0}
+.toc li{margin:.35em 0}
+audio{width:100%;margin-top:1em}
+.nav{margin-top:2.5em;font-size:.95em}
+em{font-style:italic}
+hr{border:none;border-top:1px solid #ccc;margin:1.4em 0}
+@media (max-width:600px){body{font-size:1.06em;margin:1em auto}}
