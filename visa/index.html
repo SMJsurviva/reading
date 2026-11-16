@@ -1,785 +1,278 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>F-5-1 비자 서류 현황 | Visa Document Tracker</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --green:  #1a9e5c; --green-bg: #eafaf1;
-      --red:    #c0392b; --red-bg:   #fdecea;
-      --amber:  #d97706; --amber-bg: #fffbeb;
-      --blue:   #1d6fa4; --blue-bg:  #eff6ff;
-      --purple: #6d28d9; --purple-bg:#ede9fe;
-      --grey:   #6b7280; --grey-bg:  #f3f4f6;
-      --border: #e5e7eb; --text: #111827; --sub: #6b7280;
-    }
-
-    body {
-      font-family: 'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',system-ui,sans-serif;
-      background: #f9fafb; color: var(--text); line-height: 1.6;
-    }
-
-    /* ── Password Gate ── */
-    #gate {
-      position: fixed; inset: 0; z-index: 9999;
-      background: #0f172a;
-      display: flex; align-items: center; justify-content: center;
-    }
-    #gate.hidden { display: none; }
-    .gate-box {
-      background: #1e293b; border-radius: 16px; padding: 40px 36px;
-      width: 100%; max-width: 380px; text-align: center;
-    }
-    .gate-box h2 { color: #f1f5f9; font-size: 1.2rem; margin-bottom: 6px; }
-    .gate-box p  { color: #94a3b8; font-size: 0.82rem; margin-bottom: 24px; }
-    .gate-input {
-      width: 100%; padding: 12px 14px; font-size: 1rem;
-      background: #0f172a; border: 1px solid #334155;
-      border-radius: 8px; color: #f1f5f9; outline: none;
-      margin-bottom: 12px; letter-spacing: 0.05em;
-      text-align: center;
-    }
-    .gate-input:focus { border-color: #60a5fa; }
-    .gate-btn {
-      width: 100%; padding: 12px; font-size: 0.95rem; font-weight: 600;
-      background: #3b82f6; color: #fff; border: none; border-radius: 8px;
-      cursor: pointer; transition: background 0.2s;
-    }
-    .gate-btn:hover { background: #2563eb; }
-    .gate-error { color: #f87171; font-size: 0.8rem; margin-top: 10px; display: none; }
-
-    /* ── Header ── */
-    .header { background: #0f172a; color: #fff; padding: 32px 24px 28px; }
-    .header-inner { max-width: 900px; margin: 0 auto; }
-    .header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
-    .header h1 span { color: #60a5fa; }
-    .header .sub { margin-top: 6px; font-size: 0.85rem; color: #94a3b8; }
-    .meta-grid {
-      display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-      gap: 12px; margin-top: 20px;
-    }
-    .meta-item { background: rgba(255,255,255,0.07); border-radius: 8px; padding: 10px 14px; }
-    .meta-item .label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; }
-    .meta-item .value { font-size: 0.95rem; font-weight: 600; margin-top: 2px; }
-
-    /* ── Layout ── */
-    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
-
-    /* ── Alert ── */
-    .alert {
-      background: var(--red-bg); border: 1px solid #f5c6c2;
-      border-left: 4px solid var(--red); border-radius: 8px;
-      padding: 14px 18px; margin-bottom: 24px;
-    }
-    .alert h3 { color: var(--red); font-size: 0.9rem; font-weight: 700; }
-    .alert ul { margin-top: 8px; padding-left: 18px; font-size: 0.875rem; }
-    .alert ul li { margin-top: 4px; }
-
-    /* ── Progress ── */
-    .progress-card {
-      background: #fff; border: 1px solid var(--border);
-      border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;
-    }
-    .progress-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:0.875rem; font-weight:600; }
-    .progress-bar-bg { background:#e5e7eb; border-radius:99px; height:8px; }
-    .progress-bar-fill {
-      background: linear-gradient(90deg,#1a9e5c,#3bcf8e);
-      border-radius:99px; height:8px; width:0%; transition:width 0.4s;
-    }
-    .progress-legend { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:0.78rem; }
-    .leg { display:flex; align-items:center; gap:5px; }
-    .leg-dot { width:10px; height:10px; border-radius:50%; }
-
-    /* ── Section ── */
-    .section { margin-bottom: 28px; }
-    .section-title { font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--sub); margin-bottom:10px; }
-
-    /* ── Doc Card ── */
-    .doc-list { display:flex; flex-direction:column; gap:8px; }
-    .doc-card {
-      background: #fff; border: 1px solid var(--border);
-      border-radius: 10px; padding: 14px 16px;
-      display: grid; grid-template-columns: 36px 1fr auto;
-      gap: 12px; align-items: start;
-    }
-    .doc-num { font-size:0.75rem; font-weight:700; color:var(--sub); padding-top:2px; text-align:right; }
-    .doc-name-en { font-size:0.9rem; font-weight:600; }
-    .doc-name-ko { font-size:0.8rem; color:var(--sub); margin-top:1px; }
-    .doc-note { font-size:0.78rem; color:var(--sub); margin-top:5px; line-height:1.5; }
-    .doc-note.urgent { color:var(--red); font-weight:500; }
-    .doc-note.warn   { color:var(--amber); font-weight:500; }
-    .doc-note.info   { color:var(--blue); }
-
-    /* right-side col: badge + view button */
-    .doc-actions { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-
-    /* ── Status Badge ── */
-    .badge { font-size:0.72rem; font-weight:700; padding:4px 10px; border-radius:99px; white-space:nowrap; }
-    .badge-ready    { background:var(--green-bg);  color:var(--green);  }
-    .badge-expired  { background:var(--red-bg);    color:var(--red);    }
-    .badge-action   { background:var(--amber-bg);  color:var(--amber);  }
-    .badge-missing  { background:var(--grey-bg);   color:var(--grey);   }
-    .badge-exempt   { background:var(--blue-bg);   color:var(--blue);   }
-    .badge-progress { background:var(--purple-bg); color:var(--purple); }
-
-    /* ── View Button ── */
-    .view-btn {
-      font-size:0.72rem; font-weight:600;
-      padding:4px 10px; border-radius:6px;
-      background:#f1f5f9; color:#334155;
-      text-decoration:none; border:1px solid #e2e8f0;
-      white-space:nowrap; transition:background 0.15s;
-    }
-    .view-btn:hover { background:#e2e8f0; }
-    .view-btn.outdated { opacity:0.55; }
-
-    /* ── Income Table ── */
-    .income-card { background:#fff; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:24px; }
-    .income-card table { width:100%; border-collapse:collapse; font-size:0.875rem; }
-    .income-card th { background:#f8fafc; padding:10px 14px; text-align:left; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--sub); border-bottom:1px solid var(--border); }
-    .income-card td { padding:10px 14px; border-bottom:1px solid var(--border); }
-    .income-card tr:last-child td { border-bottom:none; }
-    .income-card .highlight td { background:#f0fdf4; font-weight:600; }
-    .income-card .warn-row td { background:var(--amber-bg); }
-    .amount { font-variant-numeric:tabular-nums; }
-
-    /* ── Notes card ── */
-    .notes-card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:18px 20px; }
-    .notes-card h3 { font-size:0.875rem; font-weight:700; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
-    .notes-card p, .notes-card li { font-size:0.875rem; line-height:1.7; color:#374151; }
-    .notes-card ul { padding-left:18px; margin-top:8px; }
-    .notes-card ul li { margin-bottom:5px; }
-    .ko-note { background:#f8fafc; border-radius:8px; padding:14px 16px; margin-top:14px; font-size:0.85rem; line-height:1.8; color:#374151; }
-
-    /* ── Action Checklist ── */
-    .action-list { display:flex; flex-direction:column; gap:6px; }
-    .action-item { display:flex; align-items:flex-start; gap:10px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:0.875rem; cursor:pointer; }
-    .action-item input[type=checkbox] { width:16px; height:16px; margin-top:2px; flex-shrink:0; accent-color:var(--green); cursor:pointer; }
-    .action-item.done { opacity:0.5; }
-    .action-item.done span { text-decoration:line-through; }
-    .action-tag { font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:4px; flex-shrink:0; margin-top:1px; }
-    .tag-now   { background:var(--red-bg);   color:var(--red);   }
-    .tag-week  { background:var(--amber-bg); color:var(--amber); }
-    .tag-later { background:var(--blue-bg);  color:var(--blue);  }
-
-    .footer { text-align:center; font-size:0.75rem; color:#9ca3af; margin-top:40px; }
-
-    @media(max-width:540px){
-      .doc-card { grid-template-columns:28px 1fr; }
-      .doc-actions { grid-column:2; flex-direction:row; flex-wrap:wrap; }
-      .meta-grid { grid-template-columns:1fr 1fr; }
-    }
-    @media print { body{background:white;} .container{padding:0;} #gate{display:none;} }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F-5 plan and checklist</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--green:#1a7f4e;--green-bg:#e8f6ee;--red:#b3362a;--red-bg:#fbeceb;--amber:#a85f00;--amber-bg:#fff6e0;--blue:#1d5f91;--blue-bg:#eaf3fb;--grey:#5b6472;--grey-bg:#eef0f3;--border:#dfe3e8;--text:#141a22;--sub:#5b6472;--page:#f6f7f9;--card:#fff;--ink:#0f1b2d}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',system-ui,sans-serif;background:var(--page);color:var(--text);line-height:1.65;font-size:16px}
+#gate{position:fixed;inset:0;z-index:99;background:var(--ink);display:flex;align-items:center;justify-content:center;padding:16px}
+#gate.hidden{display:none}
+.gate-box{background:#1c2a40;border-radius:14px;padding:36px 30px;width:100%;max-width:360px;text-align:center}
+.gate-box h2{color:#f1f5f9;font-size:1.1rem;margin-bottom:6px;border:0;padding:0}
+.gate-box p{color:#9fb0c6;font-size:.85rem;margin-bottom:20px}
+.gate-box input{width:100%;padding:12px;font-size:1rem;background:var(--ink);border:1px solid #37496a;border-radius:8px;color:#f1f5f9;text-align:center;margin-bottom:12px}
+.gate-box button{width:100%;padding:12px;font-size:.95rem;font-weight:600;background:#2f6fd0;color:#fff;border:0;border-radius:8px;cursor:pointer}
+#pwError{color:#ff9d94;font-size:.82rem;margin-top:10px;display:none}
+header{background:var(--ink);color:#fff;padding:28px 16px 24px}
+.wrap{max-width:920px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+h1{font-size:1.45rem;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+.subline{color:#9fb0c6;font-size:.88rem;margin-top:4px}
+.lang{display:flex;border:1px solid #37496a;border-radius:8px;overflow:hidden;flex-shrink:0}
+.lang button{background:transparent;color:#9fb0c6;border:0;padding:8px 14px;font-size:.88rem;font-weight:600;cursor:pointer}
+.lang button.on{background:#2f6fd0;color:#fff}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:18px}
+.meta>div{background:rgba(255,255,255,.07);border-radius:8px;padding:10px 12px}
+.meta .l{font-size:.72rem;color:#9fb0c6;letter-spacing:.04em}
+.meta .v{font-size:.95rem;font-weight:600;margin-top:2px}
+main{padding:22px 16px 60px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+nav.toc a{font-size:.85rem;color:var(--blue);background:var(--blue-bg);padding:5px 11px;border-radius:99px;text-decoration:none}
+section{margin-bottom:34px}
+h2{font-size:1.15rem;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--border)}
+h3{font-size:.98rem;margin:16px 0 6px}
+p{margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+.key{border-left:4px solid var(--green);background:var(--green-bg)}
+.warn{border-left:4px solid var(--amber);background:var(--amber-bg)}
+.stop{border-left:4px solid var(--red);background:var(--red-bg)}
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:620px}
+th{background:#f1f3f6;text-align:left;padding:9px 12px;font-size:.78rem;color:var(--sub);border-bottom:1px solid var(--border)}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.pass td:last-child{color:var(--green);font-weight:700}
+tr.fail td:last-child{color:var(--red);font-weight:700}
+blockquote{background:#f1f3f6;border-radius:8px;padding:12px 14px;font-size:.9rem;margin:8px 0 10px;white-space:pre-line}
+.src{font-size:.8rem;color:var(--sub)}
+ul{padding-left:20px;margin-bottom:10px}
+li{margin-bottom:5px}
+.tl{border-left:3px solid var(--border);margin-left:6px;padding-left:16px}
+.tl .step{position:relative;margin-bottom:16px}
+.tl .step::before{content:'';position:absolute;left:-23.5px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--blue);border:2px solid var(--page)}
+.tl .step.red::before{background:var(--red)}
+.tl .step.green::before{background:var(--green)}
+.tl .when{font-weight:700;font-size:.92rem}
+.todo{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:6px;cursor:pointer;font-size:.92rem}
+.todo input{width:17px;height:17px;margin-top:3px;flex-shrink:0;accent-color:var(--green)}
+.todo.done{opacity:.5}
+.todo.done .tx{text-decoration:line-through}
+.who{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--grey-bg);color:var(--grey);margin-left:6px;white-space:nowrap}
+.doc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:start}
+.doc .n{font-size:.78rem;font-weight:700;color:var(--sub);text-align:right;padding-top:2px}
+.doc .nm{font-weight:600;font-size:.93rem}
+.doc .nt{font-size:.84rem;color:var(--sub);margin-top:3px}
+.doc .act{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.badge{font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.b-ready{background:var(--green-bg);color:var(--green)}.b-refresh{background:var(--red-bg);color:var(--red)}.b-redate{background:var(--amber-bg);color:var(--amber)}.b-missing{background:var(--grey-bg);color:var(--grey)}.b-exempt{background:var(--blue-bg);color:var(--blue)}.b-reserve{background:#efe9fb;color:#5b32b0}
+.view{font-size:.74rem;font-weight:600;padding:3px 9px;border-radius:6px;background:#f1f3f6;color:#2b3645;text-decoration:none;border:1px solid var(--border)}
+details{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px}
+summary{font-weight:600;cursor:pointer}
+details ol{padding-left:20px;margin-top:8px}
+footer{text-align:center;font-size:.78rem;color:var(--sub);margin-top:30px}
+@media(max-width:560px){.doc{grid-template-columns:30px 1fr}.doc .act{grid-column:2;flex-direction:row;flex-wrap:wrap}h1{font-size:1.2rem}}
+@media print{#gate,.lang,nav.toc{display:none}body{background:#fff}.card,.doc,.todo,.tbl,details{break-inside:avoid}details>*{display:block}}
+</style>
 </head>
 <body>
+<div id="gate"><div class="gate-box">
+  <h2>F-5 비자 서류 포털</h2>
+  <p>Visa document portal. Authorized access only.<br>비밀번호를 입력하세요</p>
+  <input id="pwInput" type="password" placeholder="Password" autocomplete="current-password">
+  <button onclick="checkPw()">Enter</button>
+  <div id="pwError">비밀번호가 올바르지 않습니다 · Incorrect password</div>
+</div></div>
 
-<!-- ══ Password Gate ══ -->
-<div id="gate">
-  <div class="gate-box">
-    <h2>F-5-1 비자 서류 포털</h2>
-    <p>Visa Document Portal — Authorised access only<br>비밀번호를 입력하세요</p>
-    <input id="pwInput" class="gate-input" type="password" placeholder="Password" autocomplete="current-password">
-    <button class="gate-btn" onclick="checkPw()">Enter</button>
-    <div class="gate-error" id="pwError">비밀번호가 올바르지 않습니다 · Incorrect password</div>
+<header><div class="wrap">
+  <div class="top">
+    <div><h1 id="title"></h1><div class="subline" id="subline"></div></div>
+    <div class="lang"><button id="bEn" onclick="setLang('en')">English</button><button id="bKo" onclick="setLang('ko')">한국어</button></div>
   </div>
-</div>
+  <div class="meta" id="meta"></div>
+</div></header>
 
-<!-- ══ Main Content ══ -->
-<div class="header">
-  <div class="header-inner">
-    <h1>F-5-1 비자 서류 현황 <span>| Visa Document Tracker</span></h1>
-    <div class="sub">Jackson Matthew Edward Christopher · 포항시 북구 흥해읍 초곡길75번길 3-22</div>
-    <div class="meta-grid">
-      <div class="meta-item">
-        <div class="label">비자 유형 | Visa Type</div>
-        <div class="value">F-5-1 (5년 이상 장기체류)</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">신청 사무소 | Office</div>
-        <div class="value">포항출입국·외국인사무소</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">고용주 | Employer</div>
-        <div class="value">사단법인 청우불교원</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">검토일 | Last Updated</div>
-        <div class="value" id="today"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="container">
-
-  <div class="alert">
-    <h3>⚠️ 남은 조치 사항 | Outstanding Items — 신청일 D-5 (2026.07.22)</h3>
-    <ul>
-      <li><strong>[09]</strong> 재직증명서 — 변호사님 준비 중. 확인 후 업로드 필요</li>
-      <li><strong>[14.4]</strong> 부동산등기부등본 — 변호사님 준비 중. 확인 후 업로드 필요</li>
-      <li><strong>[Photo]</strong> 증명사진 — 미촬영. <strong>3.5cm × 4.5cm, 6개월 이내</strong> — 오늘 중 촬영 필요</li>
-      <li><strong>[03][05][06][15]</strong> 서식 날짜 — 제출일(2026.07.22)로 업데이트 필요</li>
-    </ul>
-  </div>
-
-  <div class="progress-card">
-    <div class="progress-header">
-      <span>전체 서류 준비 현황 | Overall Progress</span>
-      <span id="progress-count">계산 중...</span>
-    </div>
-    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
-    <div class="progress-legend">
-      <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>준비완료</div>
-      <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>만료/재발급</div>
-      <div class="leg"><div class="leg-dot" style="background:var(--amber)"></div>조치필요</div>
-      <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div>진행중</div>
-      <div class="leg"><div class="leg-dot" style="background:var(--grey)"></div>미비</div>
-      <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div>면제</div>
-    </div>
-  </div>
-
-  <!-- A. Identity & Forms -->
-  <div class="section">
-    <div class="section-title">A. 신분 및 기본 서류 | Identity &amp; Application Forms</div>
-    <div class="doc-list">
-
-      <div class="doc-card">
-        <div class="doc-num">01</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Passport</div>
-          <div class="doc-name-ko">여권</div>
-          <div class="doc-note info">PNG scan in file. Verify expiry date has not passed.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/01_passport.png" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">02</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Alien Registration Card (ARC)</div>
-          <div class="doc-name-ko">외국인등록증</div>
-          <div class="doc-note info">Physical card. Check remaining validity of current F-2-7 stay period.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/02_alien_registration_card.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">03</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Integrated Application Form</div>
-          <div class="doc-name-ko">통합신청서 (별지 제34호서식)</div>
-          <div class="doc-note warn">Re-date to actual application month. Download fresh copy from hikorea.go.kr if needed.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-action">날짜 변경</div>
-          <a class="view-btn" href="docs/03_integrated_application_form.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">04</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Passport Photo</div>
-          <div class="doc-name-ko">증명사진 (3.5cm × 4.5cm)</div>
-          <div class="doc-note urgent">Not yet taken. Must be within 6 months of application date.</div>
-          <div class="doc-note info" style="margin-top:3px">Applicant photo on file: <a href="docs/photo_majc.jpg" target="_blank" style="color:var(--blue)">View MAJC photo</a> — confirm if suitable or retake.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-missing">미비</div>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">05</div>
-        <div class="doc-body">
-          <div class="doc-name-en">F-5 Applicant Basic Information Form</div>
-          <div class="doc-name-ko">영주(F-5) 자격 신청자 기본 정보</div>
-          <div class="doc-note warn">Completed. Re-date to application month before submission.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-action">날짜 변경</div>
-          <a class="view-btn" href="docs/05_f5_basic_info_form.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- B. Income / Tax -->
-  <div class="section">
-    <div class="section-title">B. 소득 및 납세 서류 | Income &amp; Tax Documents</div>
-    <div class="doc-list">
-
-      <div class="doc-card">
-        <div class="doc-num">10</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Certificate of Income Amount — <strong>2025 ✓</strong></div>
-          <div class="doc-name-ko">소득금액증명 (2025년 귀속, 세무서 발급)</div>
-          <div class="doc-note info">Downloaded 2026.07.16. 2024 version also on file for reference only (marked OUTDATED).</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/10_income_cert_2025.pdf" target="_blank">View 2025</a>
-          <a class="view-btn outdated" href="docs/10_income_cert_2024_OUTDATED.pdf" target="_blank">2024 (ref)</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">11.1</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Wage &amp; Salary Income Tax Withholding Receipt — 2025</div>
-          <div class="doc-name-ko">근로소득원천징수영수증 (2025년, 청우불교원 발급)</div>
-          <div class="doc-note info">Issued 2026.02.02. Total salary ₩120,000,000. Full year Jan–Dec 2025. Signed and stamped.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/11-1_withholding_receipt_2025.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">11.2</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Hometax Income Verification Printout</div>
-          <div class="doc-name-ko">국세청홈택스 소득 확인서 (2026.02.02)</div>
-          <div class="doc-note warn">Confirm still within validity window for the submission date.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-action">날짜 확인</div>
-          <a class="view-btn" href="docs/11-2_hometax_verification.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">15</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Foreigner Occupation &amp; Annual Income Report</div>
-          <div class="doc-name-ko">직업 및 연간소득금액 신고서</div>
-          <div class="doc-note warn">Re-date to application month.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-action">날짜 변경</div>
-          <a class="view-btn" href="docs/15_occupation_income_report.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">16</div>
-        <div class="doc-body">
-          <div class="doc-name-en">National Tax Clearance Certificate</div>
-          <div class="doc-name-ko">납세증명서 (홈택스 발급)</div>
-          <div class="doc-note info">✓ Re-downloaded 2026.07.17. Valid 30 days from issue.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/16_national_tax_cert_20260717.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">17</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Local Tax Payment Certificate</div>
-          <div class="doc-name-ko">지방세 납세증명서 (정부24 발급)</div>
-          <div class="doc-note info">✓ Re-downloaded 2026.07.17. Valid 30 days from issue.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/17_local_tax_cert_20260717.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">18</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Bank Statement — Hana Bank 2025 to present</div>
-          <div class="doc-name-ko">통장사본 (하나은행, 2025~현재, 은행 확인 도장)</div>
-          <div class="doc-note info">Shows regular salary deposits from 청우불교원. Bank stamp confirmed.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/18_bank_statement_hana.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- C. Employment -->
-  <div class="section">
-    <div class="section-title">C. 재직 서류 | Employment Documents</div>
-    <div class="doc-list">
-
-      <div class="doc-card">
-        <div class="doc-num">09</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Employment Certificate</div>
-          <div class="doc-name-ko">재직증명서 (사단법인 청우불교원)</div>
-          <div class="doc-note urgent">Issued 2026.04.01 — 3.5 months old. Must be within 1 month of submission. Request fresh certificate ~1 week before appointment. / 제출일 1개월 이내 발급본 필요. 예약 1주 전 재발급 요청.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-expired">재발급 필요</div>
-          <a class="view-btn outdated" href="docs/09_employment_certificate_apr2026.pdf" target="_blank">View (old)</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">12</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Employment Contract (Standard Labour Contract)</div>
-          <div class="doc-name-ko">근로계약서</div>
-          <div class="doc-note info">Ready. Contract amount confirmed to exceed GNI income threshold.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/12_employment_contract.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">14.5</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Business Registration Certificate — 청우불교원</div>
-          <div class="doc-name-ko">사업자등록증명 (사단법인 청우불교원)</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/14-5_business_registration.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- D. Residence -->
-  <div class="section">
-    <div class="section-title">D. 거주지 서류 | Residence Documents</div>
-    <div class="doc-list">
-
-      <div class="doc-card">
-        <div class="doc-num">14.1</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Lease Agreement</div>
-          <div class="doc-name-ko">임대차계약서</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/14-1_lease_agreement.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">14.2</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Landlord / Residence Provider ID</div>
-          <div class="doc-name-ko">거주 제공자 신분증 (채희석)</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/14-2_landlord_id.jpg" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">14.3</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Confirmation of Residence / Accommodation (bilingual)</div>
-          <div class="doc-name-ko">거주숙소제공사실확인서 (영문병기, 2026)</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/14-3_residence_confirmation.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">14.4</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Real Estate Register (등기부등본)</div>
-          <div class="doc-name-ko">부동산등기사항전부증명서</div>
-          <div class="doc-note urgent">Must show current ownership as of application month. Re-download from iros.go.kr. / 신청월 기준 최신본 필요. 인터넷등기소에서 재발급.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-action">재발급 필요</div>
-          <a class="view-btn outdated" href="docs/14-4_real_estate_register_STALE.pdf" target="_blank">View (old)</a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- E. Background -->
-  <div class="section">
-    <div class="section-title">E. 신원 및 사회통합 서류 | Background &amp; Integration</div>
-    <div class="doc-list">
-
-      <div class="doc-card">
-        <div class="doc-num">06</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Letter of Personal Guarantee</div>
-          <div class="doc-name-ko">신원보증서 (별지 제129호서식)</div>
-          <div class="doc-note warn">Re-date to application month. Guarantor must be a Korean national. Valid up to 4 years.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-action">날짜 변경</div>
-          <a class="view-btn" href="docs/06_letter_of_guarantee.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">07</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Overseas Criminal Record Certificate</div>
-          <div class="doc-name-ko">해외범죄경력증명서</div>
-          <div class="doc-note info">Exempt — prior UK certificate submitted at entry; no continuous overseas stay ≥6 months since then. Confirmed by licensed consultant (행정사). Lawyer: please verify exemption still applies before submission.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-exempt">면제</div>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">08</div>
-        <div class="doc-body">
-          <div class="doc-name-en">KIIP Completion Certificate</div>
-          <div class="doc-name-ko">사회통합프로그램 이수증 (한국이민귀화적격과정)</div>
-          <div class="doc-note info">Issued 2024.08.06. 대구출입국·외국인사무소. No expiry. Note: certificate reads "JACKSON MATTHEW EDWARD" — middle name "CHRISTOPHER" omitted; same person, consistent ARC number 830304-5460196.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/08_kiip_completion.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-      <div class="doc-card">
-        <div class="doc-num">—</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Tuberculosis Diagnostic Certificate</div>
-          <div class="doc-name-ko">결핵진단서 (공공보건의료기관 또는 법무부 지정병원, 유효기간 3개월)</div>
-          <div class="doc-note warn">Not in folder. Listed as common requirement. Lawyer: confirm whether required for this applicant's circumstances. / 서류 없음. 공통 필수 서류 목록에 포함됨. 법무사 확인 필요.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-missing">확인 필요</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- F. Academic -->
-  <div class="section">
-    <div class="section-title">F. 학력 서류 | Academic Documents</div>
-    <div class="doc-list">
-
-      <div class="doc-card">
-        <div class="doc-num">13</div>
-        <div class="doc-body">
-          <div class="doc-name-en">Bachelor's Degree Certificate — University of Oxford</div>
-          <div class="doc-name-ko">학위증명서 (옥스퍼드대학교)</div>
-          <div class="doc-note warn">Ready. Lawyer: advise whether apostille is required for this foreign academic credential. / 준비완료. 법무사 — 외국 학위증에 아포스티유 필요 여부 확인 요청.</div>
-        </div>
-        <div class="doc-actions">
-          <div class="badge badge-ready">준비완료</div>
-          <a class="view-btn" href="docs/13_bachelor_degree.pdf" target="_blank">View</a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Income Analysis -->
-  <div class="section">
-    <div class="section-title">소득 요건 분석 | Income Requirement Analysis</div>
-    <div class="income-card">
-      <table>
-        <thead>
-          <tr>
-            <th>연도</th><th>고용주 Employer</th><th>총급여 Gross Income</th><th>~2× GNI 기준</th><th>충족 여부</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="warn-row">
-            <td>2024</td><td>DK Tech + 무적외국어학원</td>
-            <td class="amount">₩67,000,000</td><td class="amount">~₩86,000,000</td>
-            <td>⚠️ 미달 가능성</td>
-          </tr>
-          <tr class="highlight">
-            <td><strong>2025</strong></td><td><strong>사단법인 청우불교원</strong></td>
-            <td class="amount"><strong>₩120,000,000</strong></td><td class="amount">~₩88,000,000</td>
-            <td><strong>✅ 충족</strong></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="notes-card">
-      <h3>💼 법무사 참고 사항 | Notes for Lawyer</h3>
-      <div class="ko-note">
-        <strong>[변호사 검토 요청 사항]</strong><br><br>
-        <strong>1. 소득 급증 이슈:</strong> 신청인의 소득이 2024년 ₩67M에서 2025년 ₩120M으로 급증하였습니다. 출입국 심사관이 F-5 소득 요건 충족을 위한 인위적 증가로 판단할 수 있습니다. 소득금액증명, 원천징수영수증, 통장 급여 입금 내역을 함께 제출하여 소득의 실재성을 입증하는 것을 권장합니다.<br><br>
-        <strong>2. 조기 신청 배경:</strong> 고용주(청우불교원)의 요청에 의해 조기 신청합니다. F-5-1(5년 이상 장기체류) 경로를 선택하였으나, 행정사는 F-2-7 전환자에게는 F-5-16이 해당된다고 안내하였습니다. 법무사의 최종 판단을 요청드립니다.<br><br>
-        <strong>3. 결핵진단서:</strong> 서류 목록에 없습니다. 필요 여부를 확인해 주십시오.<br><br>
-        <strong>4. 학위증 아포스티유:</strong> 옥스퍼드대학교 학위증(외국 발행)에 대해 아포스티유 또는 영사 확인이 필요한지 확인 요청드립니다.
-      </div>
-      <div style="margin-top:14px">
-        <strong>English summary:</strong>
-        <ul>
-          <li>Income jumped ₩67M→₩120M (2024→2025) due to employer change. Recommend pre-submitting full income trail to counter any suspicion of artificial inflation.</li>
-          <li>F-5-1 chosen (employer request, early application). Consultant suggested F-5-16 for F-2-7 holders — please advise on strongest path.</li>
-          <li>Criminal record cert: exempt per licensed consultant — please confirm still valid before submission.</li>
-          <li>TB certificate and Oxford degree apostille: both need lawyer clarification.</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Action Checklist -->
-  <div class="section">
-    <div class="section-title">✅ 단계별 조치 사항 | Action Checklist</div>
-    <div class="action-list" id="actionList">
-      <label class="action-item" data-id="a1">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-now">완료</span>
-        <span>[10] 2025년도 소득금액증명 다운로드 — ✓ Downloaded 2026.07.16</span>
-      </label>
-      <label class="action-item" data-id="a2">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-now">지금</span>
-        <span>[Photo] 증명사진 촬영 (3.5×4.5cm, 6개월 이내) — Take passport photo</span>
-      </label>
-      <label class="action-item" data-id="a3">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-now">지금</span>
-        <span>법무사에게 포털 공유 및 [07] 면제 여부, [결핵] 필요 여부, [13] 아포스티유 여부 확인 요청</span>
-      </label>
-      <label class="action-item" data-id="a4">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-now">지금</span>
-        <span>포항출입국사무소 예약 (hikorea.go.kr) — Book appointment</span>
-      </label>
-      <label class="action-item" data-id="a5">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-week">1주 전</span>
-        <span>[09] 청우불교원에 재직증명서 재발급 요청 — Fresh employment cert from employer</span>
-      </label>
-      <label class="action-item" data-id="a6">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-week">1주 전</span>
-        <span>[14.4] 인터넷등기소(iros.go.kr)에서 부동산등기부등본 재발급</span>
-      </label>
-      <label class="action-item" data-id="a7">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-week">1주 전</span>
-        <span>[16] 홈택스에서 납세증명서 재발급 (유효기간 30일)</span>
-      </label>
-      <label class="action-item" data-id="a8">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-week">1주 전</span>
-        <span>[17] 위택스에서 지방세 납세증명서 재발급 — 포항시 북구, 영주권 신청용 (유효기간 30일)</span>
-      </label>
-      <label class="action-item" data-id="a9">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-later">제출 당일</span>
-        <span>[03][05][06][15] 모든 서식 신청일 날짜로 업데이트 — Re-date all forms</span>
-      </label>
-      <label class="action-item" data-id="a10">
-        <input type="checkbox" onchange="toggleDone(this)">
-        <span class="action-tag tag-later">제출 당일</span>
-        <span>포항출입국사무소 방문 및 서류 제출 — Attend appointment</span>
-      </label>
-    </div>
-  </div>
-
-  <div class="footer">
-    <p>마지막 업데이트 | Last updated: <span id="footerDate"></span> &nbsp;·&nbsp; 비공개 용도 | Private use only</p>
-  </div>
-
-</div>
+<main><div class="wrap" id="app"></div></main>
 
 <script>
-  // ── Password ──
-  const PASS_HASH = '29fc4b73'; // simpleHash('pohang2026')
-  const STORE_KEY_PW = 'visa_pw_ok';
+const PASS_HASH='29fc4b73';
+function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=(Math.imul(31,h)+s.charCodeAt(i))|0}return(h>>>0).toString(16)}
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function checkPw(){const i=document.getElementById('pwInput');if(simpleHash(i.value)===PASS_HASH){store('visa_pw_ok',Date.now().toString());document.getElementById('gate').classList.add('hidden')}else{document.getElementById('pwError').style.display='block';i.value='';i.focus()}}
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw()});
+(function(){const s=store('visa_pw_ok');if(location.protocol==='file:'||(s&&Date.now()-parseInt(s)<7*864e5))document.getElementById('gate').classList.add('hidden')})();
 
-  function simpleHash(s) {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-    return (h >>> 0).toString(16);
-  }
+let L=store('visa_lang')||'en';
+const T=(en,ko)=>L==='ko'?ko:en;
 
-  function checkPw() {
-    const val = document.getElementById('pwInput').value;
-    if (simpleHash(val) === PASS_HASH) {
-      localStorage.setItem(STORE_KEY_PW, Date.now().toString());
-      document.getElementById('gate').classList.add('hidden');
-    } else {
-      document.getElementById('pwError').style.display = 'block';
-      document.getElementById('pwInput').value = '';
-      document.getElementById('pwInput').focus();
-    }
-  }
+const WINDOW=[
+ {c:'pass',en:['Now to 31 Dec 2026 (F-5-1 only)','2025','2025 GNI, already announced','₩105.14M','₩120M','Pass'],ko:['지금~2026.12.31 (F-5-1만 가능)','2025년','2025년 GNI (발표됨)','1억 514만원','1억 2,000만원','충족']},
+ {c:'pass',en:['4 Jan 2027 to the Bank of Korea release (about 5 to 10 Mar)','2025, because the 2026 certificate cannot be issued yet','2025 GNI, because the 2026 figure is not announced yet','₩105.14M','₩120M','Pass'],ko:['2027.1.4~한국은행 발표 전 (3월 5~10일경)','2025년 (2026년 귀속 소득금액증명 발급 불가)','2025년 GNI (2026년 GNI 미발표)','1억 514만원','1억 2,000만원','충족']},
+ {c:'fail',en:['Bank of Korea release to 30 Apr 2027','2025','2026 GNI','about ₩128M (estimate)','₩120M','Fail'],ko:['한국은행 발표 후~2027.4.30','2025년','2026년 GNI','약 1억 2,800만원 (추정)','1억 2,000만원','미달']},
+ {c:'fail',en:['From 1 May 2027','2026','2026 GNI','about ₩128M (estimate)','₩120M','Fail'],ko:['2027.5.1 이후','2026년','2026년 GNI','약 1억 2,800만원 (추정)','1억 2,000만원','미달']}
+];
 
-  document.getElementById('pwInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') checkPw();
-  });
+const TIMELINE=[
+ {w:['16 to 22 Nov 2026','2026.11.16~22'],en:'Put the two rule questions to 변호사님 and to Paul at Expatown, with the manual wording below. Check the passport expiry date. Confirm who signs the guarantee. Look at Hi Korea for Pohang visit slots in January.',ko:'변호사님과 Expatown(Paul)에게 아래 매뉴얼 문구와 함께 두 가지 질문 전달. 여권 만료일 확인. 신원보증인 확정. 하이코리아에서 포항출장소 1월 방문예약 가능 여부 확인.'},
+ {w:['23 to 30 Nov','11.23~30'],en:'Decide the category and the date (recommended: F-5-16, week of 11 Jan). Decide who files: Matthew alone, Expatown, or the 행정사 from the August call. Book the visit as soon as January slots open.',ko:'신청 자격과 날짜 결정 (권장: F-5-16, 1월 11일 주). 신청 방식 결정: 본인 직접, Expatown, 또는 8월 통화한 행정사. 1월 예약이 열리는 즉시 방문예약.'},
+ {w:['1 to 18 Dec','12.1~18'],en:'Ask the employer for the January documents in advance. Prepare the reserve pack (held back unless the office asks). Get the monthly work reports signed through December.',ko:'1월에 필요한 회사 서류 사전 요청. 예비 자료(요청 시에만 제출) 준비. 12월분까지 월간 업무보고서 서명 완료.'},
+ {w:['14 to 24 Dec','12.14~24'],en:'Passport photo. Fill in forms 03, 05, 06 and 15 with the date left blank. First practice interview in Korean.',ko:'증명사진 촬영. 서식 03, 05, 06, 15 작성 (날짜는 비워 둠). 한국어 모의 면담 1차.'},
+ {w:['4 Jan 2027','2027.1.4'],c:'green',en:'Three years on F-2-7. F-5-16 becomes available.',ko:'F-2-7 3년 경과. F-5-16 신청 가능.'},
+ {w:['4 to 8 Jan','1.4~8'],en:'Issue everything with a short life: income certificate (2025), national and local tax certificates, health insurance payment record, property register, employment certificate, stamped bank statement. Date and sign the forms.',ko:'유효기간이 짧은 서류 일괄 발급: 소득금액증명(2025년 귀속), 국세·지방세 납세증명서, 건강보험료 납부확인서, 등기사항전부증명서, 재직증명서, 은행 직인 거래내역. 서식 날짜 기재 및 서명.'},
+ {w:['11 to 15 Jan','1.11~15'],c:'green',en:'File at the immigration office. Keep the receipt.',ko:'출입국·외국인관서 접수. 접수증 보관.'},
+ {w:['Until 26 Feb','~2.26'],en:'Fallback dates if a document or a slot slips. Treat Friday 26 February as the last safe day.',ko:'서류나 예약이 지연될 경우의 예비 기간. 2월 26일(금)을 마지막 안전일로 봄.'},
+ {w:['About 5 to 10 Mar','3월 5~10일경'],c:'red',en:'The Bank of Korea announces 2026 GNI (10 Mar in 2026, 5 Mar in 2025). The window closes.',ko:'한국은행 2026년 GNI 발표 (2026년은 3월 10일, 2025년은 3월 5일). 신청 가능 기간 종료.'},
+ {w:['After filing','접수 이후'],en:'Keep the job, the salary and the address unchanged until the decision. Report any change to the office. No long trips abroad. Answer any request for more documents inside its deadline. Reports of processing time run from 3 to 12 months.',ko:'결정 시까지 근무처·급여·주소 유지. 변동 시 관서에 신고. 장기 해외 체류 금지. 보완 요구는 기한 내 제출. 심사 기간은 3~12개월로 알려져 있음.'}
+];
 
-  // Check if already authenticated (7-day window)
-  (function() {
-    const saved = localStorage.getItem(STORE_KEY_PW);
-    if (saved && Date.now() - parseInt(saved) < 7 * 86400000) {
-      document.getElementById('gate').classList.add('hidden');
-    }
-  })();
+const TODO=[
+ ['t1','M','Send the two questions and the manual wording to 변호사님','변호사님께 두 가지 질문과 매뉴얼 문구 전달'],
+ ['t2','M','Send the same two questions to Paul at Expatown and ask for a written answer','Expatown(Paul)에게 같은 질문 전달, 서면 답변 요청'],
+ ['t3','M','Check the passport expiry date','여권 만료일 확인'],
+ ['t4','M','Confirm the guarantor (a Korean national) for form 06','신원보증서(06) 보증인(대한민국 국민) 확정'],
+ ['t5','M','Check Hi Korea visit slots for Pohang in January and book','하이코리아 포항출장소 1월 방문예약 확인 및 예약'],
+ ['t6','M','Decide: F-5-16 in January, or F-5-1 in December','결정: 1월 F-5-16 또는 12월 F-5-1'],
+ ['t7','M','Decide who files: alone, Expatown, or the 행정사','신청 방식 결정: 본인, Expatown, 행정사'],
+ ['t8','L','Employment certificate dated January 2027','재직증명서 (2027년 1월 발급)'],
+ ['t9','L','Fresh copy of the business registration certificate','사업자등록증 사본 (최신)'],
+ ['t10','L','Property register for the residence, issued in January','체류지 등기사항전부증명서 (1월 발급)'],
+ ['t11','L','Residence confirmation form re-signed for 2027, with the provider\'s ID','거주숙소제공사실확인서 2027년 재작성 및 제공자 신분증'],
+ ['t12','L','Reserve pack: representative\'s statement, general meeting resolution, signed monthly work reports','예비 자료: 대표 의견서, 총회 결의서, 서명된 월간 업무보고서'],
+ ['t13','M','Passport photo, 3.5 by 4.5 cm, white background','증명사진 (3.5×4.5cm, 흰 배경)'],
+ ['t14','M','Forms 03, 05, 06 and 15 filled in and re-dated','서식 03, 05, 06, 15 작성 및 날짜 갱신'],
+ ['t15','M','Hometax: income certificate for 2025 and national tax certificate (week of 4 Jan)','홈택스: 2025년 귀속 소득금액증명, 납세증명서 (1월 4일 주)'],
+ ['t16','M','Wetax: local tax certificate (week of 4 Jan)','위택스: 지방세 납세증명서 (1월 4일 주)'],
+ ['t17','M','Health insurance payment record (week of 4 Jan)','건강보험료 납부확인서 (1월 4일 주)'],
+ ['t18','M','Hana Bank statement, January 2025 to the filing week, stamped','하나은행 거래내역 (2025.1~접수 주, 은행 직인)'],
+ ['t19','C','Two practice interviews in Korean, using a real recent week of work','한국어 모의 면담 2회 (실제 최근 한 주 업무 기준)'],
+ ['t20','M','File, and keep the receipt','접수 및 접수증 보관']
+];
+const WHO={M:['Matthew','본인'],L:['변호사님','변호사님'],C:['Claude','Claude']};
 
-  // ── Dates ──
-  const now = new Date();
-  const fmt = d => d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
-  document.getElementById('today').textContent = fmt(now);
-  document.getElementById('footerDate').textContent = fmt(now);
+const DOCS=[
+ {g:['A. Required for every F-5 application','A. 영주자격 공통 서류'],d:[
+  ['01','ready',['Passport','여권'],['Check the expiry date.','만료일 확인.'],'01_passport.png'],
+  ['02','ready',['Residence card','외국인등록증'],['F-2-7 valid to 26 Jun 2029.','F-2-7 체류기간 2029.6.26까지.'],'02_alien_registration_card.pdf'],
+  ['03','redate',['Integrated application form, with revenue stamp','통합신청서 (수입인지 포함)'],['Re-date to the filing day. Confirm the current fee with the office.','접수일로 날짜 갱신. 수수료는 관서에 확인.'],'03_integrated_application_form.pdf'],
+  ['04','missing',['Passport photo','증명사진'],['The manual asks for one only where there is no residence card. Bring one anyway for the new card.','매뉴얼상 외국인등록증이 없는 경우에만 필요. 영주증 발급용으로 지참.'],null],
+  ['05','redate',['F-5 applicant basic information form','영주(F-5) 자격 신청자 기본정보'],['Bring the work history up to January 2027. The manual warns that a false entry can cancel the status later.','근무 경력을 2027년 1월 기준으로 갱신. 허위 기재 시 영주자격 취소 가능(매뉴얼).'],'05_f5_basic_info_form.pdf'],
+  ['06','redate',['Letter of guarantee','신원보증서'],['Guarantor must be a Korean national. Re-sign with the new date.','보증인은 대한민국 국민. 날짜 갱신 후 재서명.'],'06_letter_of_guarantee.pdf'],
+  ['07','exempt',['Overseas criminal record certificate','해외범죄경력증명서'],['Exempt under the manual: a certificate was filed before, and no continuous stay abroad of six months or more since. If the office still asks, a UK ACRO certificate with apostille takes four to eight weeks.','매뉴얼상 면제: 과거 본국 범죄경력증명서 제출 후 해외 6개월 이상 연속 체류 없음. 요구 시 영국 ACRO+아포스티유 발급에 4~8주 소요.'],null],
+  ['08','ready',['KIIP completion certificate','사회통합프로그램 이수증'],['Issued August 2024.','2024년 8월 발급.'],'08_kiip_completion.pdf'],
+  ['14.1','ready',['Lease agreement','임대차계약서'],['Must be valid on the filing day.','접수일 기준 유효해야 함.'],'14-1_lease_agreement.pdf'],
+  ['14.2','ready',['ID of the person providing the residence','숙소 제공자 신분증'],['',''],'14-2_landlord_id.jpg'],
+  ['14.3','redate',['Confirmation of residence','거주숙소제공사실확인서'],['Re-sign for 2027.','2027년 기준 재작성.'],'14-3_residence_confirmation.pdf'],
+  ['14.4','refresh',['Property register','등기사항전부증명서'],['Issue in the filing week.','접수 주에 발급.'],'14-4_real_estate_register_STALE.pdf']
+ ]},
+ {g:['B. Income and tax','B. 소득 및 납세'],d:[
+  ['10','refresh',['Income certificate for 2025 (tax office)','소득금액증명 (2025년 귀속, 세무서 발급)'],['The one document that proves income. It shows ₩120,000,000 from 청우불교원. The July copy is on file; issue a fresh one in the filing week.','소득을 입증하는 핵심 서류. 청우불교원 근로소득 120,000,000원 기재. 7월 발급본 보관 중, 접수 주에 재발급.'],'10_income_cert_2025.pdf'],
+  ['16','refresh',['National tax payment certificate','납세증명서 (국세)'],['Valid about 30 days. Issue in the filing week.','유효기간 약 30일. 접수 주에 발급.'],'16_national_tax_cert_20260717.pdf'],
+  ['17','refresh',['Local tax payment certificate','지방세 납세증명서'],['Valid about 30 days. Steps below.','유효기간 약 30일. 아래 발급 절차 참고.'],'17_local_tax_cert_20260717.pdf'],
+  ['19','missing',['Health insurance payment record','건강보험료 납부확인서'],['New item. The manual counts unpaid premiums against the applicant. The office may waive it if it can see the record itself.','신규 항목. 매뉴얼상 건강보험료 미납은 불리하게 심사. 관서 전산 확인 시 제출 면제 가능.'],null],
+  ['15','redate',['Occupation and annual income report','외국인 직업 및 연간 소득금액 신고서'],['Re-date.','날짜 갱신.'],'15_occupation_income_report.pdf']
+ ]},
+ {g:['C. Extra documents for F-5-16','C. F-5-16 추가 서류'],d:[
+  ['14.5','refresh',['Business registration certificate (copy)','소속기업 사업자등록증 사본'],['Fresh copy from the employer.','회사에서 최신본 수령.'],'14-5_business_registration.pdf'],
+  ['12','ready',['Employment contract (copy)','고용계약서 사본'],['Include the contract modification agreement.','계약 변경 합의서 포함.'],'12_employment_contract.pdf'],
+  ['09','refresh',['Employment certificate','재직증명서'],['Issue in January 2027.','2027년 1월 발급.'],'09_employment_certificate_apr2026.pdf']
+ ]},
+ {g:['D. Supporting, and held in reserve','D. 참고 및 예비 자료'],d:[
+  ['18','refresh',['Hana Bank statement, January 2025 onward','하나은행 거래내역 (2025.1~)'],['Not on the official list. Shows the 2026 salary arriving every month. Bring it stamped.','공식 목록에는 없음. 2026년 급여 입금 내역 확인용. 은행 직인본 지참.'],'18_bank_statement_hana.pdf'],
+  ['11.1','reserve',['Withholding receipt for 2025','근로소득원천징수영수증 (2025년)'],['Not on the F-5 list. Keep to hand.','F-5 서류 목록에 없음. 지참만.'],'11-1_withholding_receipt_2025.pdf'],
+  ['13','reserve',['Degree certificate','학위증'],['Not required for F-5-16.','F-5-16 필수 아님.'],'13_bachelor_degree.pdf'],
+  ['R','reserve',['Representative\'s statement, general meeting resolution, monthly work reports','대표 의견서, 총회 결의서, 월간 업무보고서'],['Prepared, and handed over only if the office asks or calls an interview. This follows the 행정사\'s advice of 22 August.','준비해 두고 보완 요구나 면담 시에만 제출 (8월 22일 행정사 조언).'],null]
+ ]}
+];
+const BADGE={ready:['Ready','준비완료'],refresh:['Reissue in January','1월 재발급'],redate:['Re-date','날짜 갱신'],missing:['To get','미비'],exempt:['Exempt','면제'],reserve:['In reserve','예비']};
 
-  // ── Checklist state ──
-  const STORE_KEY_CL = 'f5_checklist_v2';
-  function loadState() { try { return JSON.parse(localStorage.getItem(STORE_KEY_CL)) || {}; } catch(e) { return {}; } }
-  function saveState(s) { localStorage.setItem(STORE_KEY_CL, JSON.stringify(s)); }
-  function toggleDone(cb) {
-    const item = cb.closest('.action-item');
-    item.classList.toggle('done', cb.checked);
-    const s = loadState(); s[item.dataset.id] = cb.checked; saveState(s);
-    updateProgress();
-  }
-  function initCheckboxes() {
-    const s = loadState();
-    document.querySelectorAll('.action-item').forEach(item => {
-      const cb = item.querySelector('input[type=checkbox]');
-      if (s[item.dataset.id]) { cb.checked = true; item.classList.add('done'); }
-    });
-    updateProgress();
-  }
-  function updateProgress() {
-    const total = document.querySelectorAll('.action-item').length;
-    const done  = document.querySelectorAll('.action-item.done').length;
-    const pct   = Math.round(done / total * 100);
-    document.getElementById('progress-count').textContent = `${done} / ${total} 완료 (${pct}%)`;
-    document.getElementById('progress-fill').style.width = pct + '%';
-  }
+function render(){
+ document.documentElement.lang=L;
+ document.getElementById('bEn').className=L==='en'?'on':'';document.getElementById('bKo').className=L==='ko'?'on':'';
+ document.getElementById('title').textContent=T('F-5 permanent residence: plan and checklist','F-5 영주자격: 신청 계획 및 서류 현황');
+ document.getElementById('subline').textContent=T('Matthew Jackson · employer 사단법인 청우불교원 · updated 16 November 2026','Matthew Jackson · 소속 사단법인 청우불교원 · 2026년 11월 16일 갱신');
+ const meta=[[T('Category','신청 자격'),T('F-5-16 (points-based resident)','F-5-16 (점수제 영주)')],[T('Target filing','접수 목표'),T('11 to 15 Jan 2027','2027.1.11~15')],[T('Last safe day','마지막 안전일'),T('Fri 26 Feb 2027','2027.2.26 (금)')],[T('Office','관할'),T('Pohang branch (Daegu)','대구출입국 포항출장소')]];
+ document.getElementById('meta').innerHTML=meta.map(m=>`<div><div class="l">${m[0]}</div><div class="v">${m[1]}</div></div>`).join('');
+ let h='';
+ h+=`<nav class="toc"><a href="#s1">${T('The window','신청 가능 기간')}</a><a href="#s2">${T('Two questions','두 가지 질문')}</a><a href="#s3">${T('Timeline','일정')}</a><a href="#s4">${T('To-do','할 일')}</a><a href="#s5">${T('Documents','서류')}</a><a href="#s6">${T('Website steps','발급 절차')}</a><a href="#s7">${T('Open points','미결 사항')}</a></nav>`;
 
-  // Pre-check item a1 (already done)
-  (function() {
-    const s = loadState();
-    if (s['a1'] === undefined) { s['a1'] = true; saveState(s); }
-  })();
+ h+=`<section id="s1"><h2>${T('1. The window: file in January','1. 신청 가능 기간: 1월 접수')}</h2>
+ <div class="card key"><p><strong>${T('File between 4 January and late February 2027. The target is the week of 11 January.','2027년 1월 4일부터 2월 말 사이에 접수. 목표는 1월 11일 주.')}</strong></p>
+ <p>${T('The income test compares one year of income with twice the per-person national income (GNI). Until the Bank of Korea announces the 2026 figure in early March, the office must use the 2025 figure. Income of ₩120M clears that by about ₩15M. Once the 2026 figure is out, the bar rises to about ₩128M and the same income fails.','소득 요건은 1년 소득을 1인당 국민총소득(GNI)의 2배와 비교합니다. 한국은행이 3월 초 2026년 GNI를 발표하기 전까지는 2025년 GNI가 적용됩니다. 소득 1억 2,000만원은 이 기준을 약 1,500만원 초과합니다. 2026년 GNI가 발표되면 기준이 약 1억 2,800만원으로 올라 같은 소득으로는 미달합니다.')}</p></div>
+ <div class="tbl"><table><thead><tr>${(L==='ko'?['접수 시기','심사 소득연도','적용 GNI','GNI 2배','본인 소득','결과']:['Filing date','Income year assessed','GNI used','Twice GNI','Income','Result']).map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${WINDOW.map(r=>`<tr class="${r.c}">${r[L].map((x,i)=>`<td class="${i>2?'num':''}">${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+ <p class="src">${T('Figures: 2025 GNI per person ₩52,570,000 (Bank of Korea, revised 9 June 2026; the first release on 10 March 2026 was ₩52,416,000). The 2026 figure is an estimate: the 2025 figure raised by the 21.7% nominal growth the Finance Ministry cited on 27 October 2026. Income: ₩120,000,000 on the 2025 income certificate.','수치: 2025년 1인당 GNI 5,257만원 (한국은행 2026.6.9 수정치, 2026.3.10 잠정치는 5,241.6만원). 2026년 수치는 추정: 재정경제부가 2026.10.27 인용한 경상성장률 21.7% 적용. 소득: 2025년 귀속 소득금액증명상 120,000,000원.')}</p>
+ <h3>${T('What the November 2026 manual says','2026년 11월 매뉴얼 문구')}</h3>
+ <blockquote>나. 소득 산정기간
+○ 원칙 : 신청일이 속하는 연도(年度)의 이전 1년
+○ 예외 : 신청일이 속하는 전년도(前年度)의 이전 1년
+  ☞ 신청일 기준으로 세무당국에서 소득금액증명 등 납부한 세금 관련 공적 증명서류가 발급되지 않을 경우 적용함
+  예시) 2020.2.1. 영주를 신청하였으나 신청일 당시 기준으로 2019년도 소득금액증명이 발부되지 않은 경우 : 2018년도를 소득 산정기간으로 정하고 2018년도 소득금액증명원으로 심사
 
-  initCheckboxes();
+마. 인정되는 연간소득을 비교하는 기준
+○ 원칙 : 신청일 기준 전년도 1인당 국민총소득(GNI)
+○ 예외 : 신청일 기준 전전년도 1인당 국민총소득(GNI)
+  ☞ 신청일 기준 전년도 1인당 GNI가 발표되지 않았을 경우 적용</blockquote>
+ <p class="src">${T('Source: 체류민원 자격별 안내 매뉴얼 (Hi Korea, 10 November 2026), chapter 영주(F-5), section 생계유지능력 요건.','출처: 체류민원 자격별 안내 매뉴얼 (하이코리아, 2026.11.10), 영주(F-5) 편, 생계유지능력 요건.')}</p>
+ <p>${T('In plain terms: a February filing is the manual\'s own worked example. The office assesses the last year that has a tax-office certificate (2025) against the last GNI that has been announced (2025).','요약: 2월 접수는 매뉴얼의 예시 그대로입니다. 소득금액증명이 발급되는 마지막 연도(2025년)의 소득을, 발표된 마지막 GNI(2025년)와 비교합니다.')}</p></section>`;
+
+ h+=`<section id="s2"><h2>${T('2. The two questions for the outside experts','2. 외부 전문가 확인 질문 두 가지')}</h2>
+ <div class="card"><h3 style="margin-top:0">${T('Question 1. Is the 2026 withholding receipt worth waiting for until late February?','질문 1. 2026년 근로소득원천징수영수증을 기다려 2월 말에 신청할 가치가 있습니까?')}</h3>
+ <p><strong>${T('The manual says no.','매뉴얼상으로는 아닙니다.')}</strong> ${T('The F-5 document list names only the tax-office income certificate. The set of "withholding receipt, bank records and a pledge" appears in the chapter for overseas Koreans applying for permanent residence, and in the long-term residence (F-2-99) section. It does not appear in the general F-5 chapter. For a general applicant with no certificate for last year, the manual moves the assessed year back one year. So the 2026 receipt cannot make 2026 the assessed year, and waiting for it moves the filing closer to the GNI announcement.','F-5 공통 서류에는 세무서 발급 소득금액증명만 명시되어 있습니다. "원천징수영수증+계좌 증빙+서약서" 대체 서류는 외국국적동포 영주 편과 기타 장기거주(F-2-99) 편에만 있고, 일반 영주(F-5) 편에는 없습니다. 일반 신청자는 전년도 소득금액증명이 없으면 소득 산정기간이 전전년도로 바뀝니다. 따라서 2026년 영수증으로 2026년을 심사연도로 만들 수 없고, 기다리면 GNI 발표일에 가까워질 뿐입니다.')}</p></div>
+ <div class="card"><h3 style="margin-top:0">${T('Question 2. In January and February 2027, is the 2025 GNI still the benchmark, or must the application go in during 2026?','질문 2. 2027년 1~2월에도 2025년 GNI가 기준입니까, 아니면 2026년 안에 신청해야 합니까?')}</h3>
+ <p><strong>${T('The manual says the 2025 GNI still applies, until the 2026 figure is announced.','매뉴얼상 2026년 GNI 발표 전까지는 2025년 GNI가 적용됩니다.')}</strong> ${T('There is no need to file in 2026 for that reason. What still needs an expert\'s answer is practice, not the rule: whether the Pohang branch applies the exception as written, and what it treats as the announcement.','이 이유만으로 2026년 안에 신청할 필요는 없습니다. 다만 규정이 아닌 실무는 확인이 필요합니다: 포항출장소가 예외 규정을 문구대로 적용하는지, 무엇을 "발표"로 보는지.')}</p></div>
+ <h3>${T('Wording to send (Korean)','전달용 문구')}</h3>
+ <blockquote>① 2027년 1~2월에 F-5-16을 신청하면, 「체류민원 자격별 안내 매뉴얼」(2026.11.10) 영주(F-5) 생계유지능력 요건 나.·마.항의 예외에 따라 소득 산정기간은 2025년(2025년 귀속 소득금액증명), 비교 기준은 2025년 1인당 GNI가 맞습니까? 포항출장소(대구출입국) 실무도 같습니까?
+② 한국은행의 2026년 GNI "발표" 시점은 3월 초 연간 국민소득(잠정) 발표일로 봅니까? 그 전에 접수된 건은 심사가 발표 이후에 이루어져도 접수일 기준 GNI가 적용됩니까?
+③ 일반 영주(F-5) 신청에서 2026년 근로소득원천징수영수증이 소득 입증서류로 인정됩니까, 아니면 외국국적동포 영주에만 해당합니까?</blockquote>
+ <p class="src">${T('Point ② second half matters most: the manual says "as of the application date", so a January filing should keep the 2025 benchmark even if the decision comes after March. Ask for that in writing.','②의 뒷부분이 가장 중요합니다. 매뉴얼은 "신청일 기준"이라고 하므로 1월 접수 건은 3월 이후 심사되어도 2025년 기준이 유지되어야 합니다. 서면 확인을 요청하십시오.')}</p></section>`;
+
+ h+=`<section id="s3"><h2>${T('3. Timeline','3. 일정')}</h2><div class="tl">${TIMELINE.map(s=>`<div class="step ${s.c||''}"><div class="when">${s.w[L==='ko'?1:0]}</div><div>${s[L]}</div></div>`).join('')}</div></section>`;
+
+ let st={};try{st=JSON.parse(store('f5_todo_v3')||'{}')}catch(e){}
+ h+=`<section id="s4"><h2>${T('4. To-do list','4. 할 일')}</h2><p class="src">${T('Ticks are saved in this browser only.','체크 표시는 이 브라우저에만 저장됩니다.')}</p>${TODO.map(t=>`<label class="todo ${st[t[0]]?'done':''}"><input type="checkbox" data-id="${t[0]}" ${st[t[0]]?'checked':''} onchange="tick(this)"><span class="tx">${L==='ko'?t[3]:t[2]}</span><span class="who">${WHO[t[1]][L==='ko'?1:0]}</span></label>`).join('')}</section>`;
+
+ h+=`<section id="s5"><h2>${T('5. Document checklist for a January filing','5. 1월 접수 기준 서류 현황')}</h2><p class="src">${T('The files linked here are the 2026 versions. Status shows what each one needs before January.','연결된 파일은 2026년 버전입니다. 상태는 1월 전에 필요한 조치를 나타냅니다.')}</p>`;
+ DOCS.forEach(g=>{h+=`<h3>${g.g[L==='ko'?1:0]}</h3>`+g.d.map(d=>`<div class="doc"><div class="n">${d[0]}</div><div><div class="nm">${d[2][L==='ko'?1:0]}</div>${d[3][0]?`<div class="nt">${d[3][L==='ko'?1:0]}</div>`:''}</div><div class="act"><span class="badge b-${d[1]}">${BADGE[d[1]][L==='ko'?1:0]}</span>${d[4]&&location.protocol!=='file:'?`<a class="view" href="docs/${d[4]}" target="_blank">${T('View','보기')}</a>`:''}</div></div>`).join('')});
+ h+=`</section>`;
+
+ h+=`<section id="s6"><h2>${T('6. Website steps for the short-life documents','6. 유효기간이 짧은 서류의 발급 절차')}</h2>
+ <details open><summary>${T('Local tax payment certificate (Wetax), from the February checklist','지방세 납세증명서 (위택스), 2월 체크리스트 내용')}</summary><ol>
+ <li>${T('Go to wetax.go.kr and log in.','wetax.go.kr 접속 후 로그인.')}</li>
+ <li>${T('Top menu 발급, then the first item 문서발급 안내 및 발급.','상단 메뉴 "발급" → 첫 항목 "문서발급 안내 및 발급".')}</li>
+ <li>${T('Choose 지방세 납세증명서. Do not choose 세목별 과세증명서; that is a different list.','"지방세 납세증명서" 선택. "세목별 과세증명서"는 다른 서류이므로 선택하지 않음.')}</li>
+ <li>${T('Name and number fill in by themselves. For the address choose 경상북도, then 포항시 북구. It must be 북구 to match the Chogok-gil address.','성명·번호는 자동 입력. 주소는 "경상북도" → "포항시 북구" (초곡길 주소와 일치해야 함).')}</li>
+ <li>${T('Purpose (사용목적): choose 기타목적 and type 영주권 신청용.','사용목적: "기타목적" 선택 후 "영주권 신청용" 입력.')}</li>
+ <li>${T('Check that the page says 체납 사실이 존재하지 않습니다.','"체납 사실이 존재하지 않습니다" 문구 확인.')}</li>
+ <li>${T('Scroll to the bottom and press 민원신청. In the pop-up press 출력 and save as PDF.','맨 아래 "민원신청" 클릭. 팝업에서 "출력" 후 PDF 저장.')}</li>
+ <li>${T('The certificate lasts 30 days. Issue it about a week before the visit, not earlier.','유효기간 30일. 방문 약 1주 전에 발급.')}</li></ol></details>
+ <details><summary>${T('Income certificate and national tax certificate (Hometax)','소득금액증명·납세증명서 (홈택스)')}</summary><ol>
+ <li>${T('Go to hometax.go.kr and log in.','hometax.go.kr 접속 후 로그인.')}</li>
+ <li>${T('Open the certificates menu (국세증명·사업자등록·세금관련 신청/신고), then 즉시발급 증명.','"국세증명·사업자등록·세금관련 신청/신고" → "즉시발급 증명".')}</li>
+ <li>${T('소득금액증명: choose 근로소득자용 and tax year 2025. Check it shows 120,000,000 from 청우불교원.','소득금액증명: "근로소득자용", 귀속연도 2025년. 청우불교원 120,000,000원 기재 확인.')}</li>
+ <li>${T('납세증명서: purpose 기타, submit to 출입국·외국인관서.','납세증명서: 사용목적 "기타", 제출처 "출입국·외국인관서".')}</li>
+ <li>${T('Menu names on Hometax change from time to time; these are from memory, not from the February checklist.','홈택스 메뉴명은 수시로 바뀝니다. 이 항목은 2월 체크리스트가 아닌 일반적인 경로입니다.')}</li></ol></details>
+ <details><summary>${T('Notes carried over from the February checklist','2월 체크리스트의 기타 메모')}</summary><ul style="margin-top:8px">
+ <li>${T('Employment certificate: the office usually wants one issued within a month of filing.','재직증명서: 통상 접수 1개월 이내 발급본 요구.')}</li>
+ <li>${T('Property register: must show ownership as of the filing month.','등기사항전부증명서: 접수월 기준 소유 현황이 나와야 함.')}</li>
+ <li>${T('Bank statement: from 2025 to the present, stamped by the bank.','거래내역: 2025년부터 현재까지, 은행 직인.')}</li>
+ <li>${T('Contract: include the contract modification agreement.','계약서: 계약 변경 합의서 포함.')}</li>
+ <li>${T('Withholding receipt: the February note said the address on it needed correcting.','원천징수영수증: 2월 메모에 주소 수정 필요로 기재됨.')}</li></ul></details></section>`;
+
+ h+=`<section id="s7"><h2>${T('7. Open points and risks','7. 미결 사항 및 위험 요소')}</h2>
+ <div class="card warn"><strong>${T('December option.','12월 신청안.')}</strong> ${T('F-5-1 can be filed now, and in 2026 it uses the same income year and the same GNI under the main rule, with no exception needed. The cost is the category: the consultant\'s follow-up email said an F-2-7 holder belongs under F-5-16, and F-5-1 invites more questions about the job. Recommended only if the experts cannot confirm the exception for January.','F-5-1은 지금도 신청 가능하며, 2026년 중에는 원칙 규정만으로 같은 소득연도·같은 GNI가 적용됩니다. 단점은 자격 구분입니다. 컨설턴트의 후속 이메일은 F-2-7 소지자는 F-5-16에 해당한다고 했고, F-5-1은 직무 관련 질문이 늘 수 있습니다. 1월 예외 적용을 전문가가 확인해 주지 못할 경우에만 권장.')}</div>
+ <div class="card warn"><strong>${T('The assessed year is 2025.','심사 소득연도는 2025년.')}</strong> ${T('That is the first year at ₩120M, after ₩67M in 2024. The 2026 salary shows only on the bank statement. Expect the question about the rise, and have the reserve pack ready.','2024년 6,700만원에서 1억 2,000만원으로 오른 첫 해입니다. 2026년 급여는 거래내역에만 나타납니다. 인상 사유 질문에 대비해 예비 자료를 준비해 둡니다.')}</div>
+ <div class="card warn"><strong>${T('No second attempt at this salary.','현 급여로는 재신청 불가.')}</strong> ${T('If a January application is refused, a new one after March meets the higher bar. So the packet must be complete on the day, with nothing left for the office to send back.','1월 신청이 불허되면 3월 이후 재신청은 높아진 기준이 적용됩니다. 접수 당일 서류가 완비되어 반려 사유가 없어야 합니다.')}</div>
+ <div class="card stop"><strong>${T('Red lines, unchanged.','지켜야 할 원칙.')}</strong> ${T('No backdated reports, and no work credited to Matthew that someone else did. Every document in the final packet is read by Matthew before it goes in.','날짜를 소급한 보고서 금지, 타인의 작업을 본인 실적으로 기재 금지. 최종 서류는 본인이 모두 직접 확인.')}</div>
+ <p class="src">${T('The Korean on this page was written by Claude and should be read over by 변호사님 before it is relied on.','이 페이지의 한국어는 Claude가 작성했으며, 활용 전 변호사님의 검토가 필요합니다.')}</p></section>`;
+ h+=`<footer>${T('Project folder: Documents/F5 Visa on Mack. Backup on Google Drive.','프로젝트 폴더: Mack의 Documents/F5 Visa. 구글 드라이브 백업.')}</footer>`;
+ document.getElementById('app').innerHTML=h;
+}
+function tick(cb){let st={};try{st=JSON.parse(store('f5_todo_v3')||'{}')}catch(e){}st[cb.dataset.id]=cb.checked;store('f5_todo_v3',JSON.stringify(st));cb.closest('.todo').classList.toggle('done',cb.checked)}
+function setLang(l){L=l;store('visa_lang',l);render()}
+if(location.hash==='#ko')L='ko';
+render();
 </script>
 </body>
 </html>
